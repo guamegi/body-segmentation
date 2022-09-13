@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.2/dist/posenet.min.js"></script>
+    <style>
+      button {
+        width: 120px;
+        height: 50px;
+        font-size: 18px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>BodyPix demo</h2>
+    <div>
+      <img id="image" src="/img/img3_1.jpg" alt="" />
+      <canvas id="canvas"></canvas>
+    </div>
+    <button onclick="predict()">predict</button>
+    <button onclick="reset()">reset</button>
+  </body>
+
+  <script>
+    const image = document.getElementById("image");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = image.width;
+    canvas.height = image.height;
+
+    predict();
+
+    function predict() {
+      bodyPix.load().then((model) => {
+        // console.log("model:", model);
+        model.segmentPersonParts(image).then((segmentation) => {
+          // const mask = bodyPix.toMask(segmentation);
+          const mask = bodyPix.toColoredPartMask(segmentation);
+          const opacity = 0.7;
+          const flipHorizontal = false;
+          const maskBlurAmount = 0; //0~20
+
+          // bodyPix.drawMask(
+          //   canvas,
+          //   image,
+          //   mask,
+          //   opacity,
+          //   maskBlurAmount,
+          //   flipHorizontal
+          // );
+
+          const pixelCellWidth = 5.0;
+          bodyPix.drawPixelatedMask(
+            canvas,
+            image,
+            mask,
+            opacity,
+            maskBlurAmount,
+            flipHorizontal,
+            pixelCellWidth
+          );
+          console.log("segmentation: ", segmentation, "mask: ", mask);
+
+          // for (let i = 0; i < segmentation.allPoses.length; i++) {
+          //   drawKeypoints(segmentation.allPoses[i].keypoints, 0.6, context);
+          //   drawSkeleton(segmentation.allPoses[i].keypoints, 0.6, context);
+          // }
+        });
+      });
+    }
+
+    function reset() {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  </script>
+  <script src="posenet.js"></script>
+</html>

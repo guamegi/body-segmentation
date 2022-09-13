@@ -1,0 +1,62 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-segmentation"></script>
+  </head>
+
+  <body>
+    <h2>Body Segmentation</h2>
+    <div>
+      <img id="image" src="/img/img3_1.jpg" alt="" />
+      <canvas id="canvas" width="400"></canvas>
+    </div>
+  </body>
+
+  <script>
+    async function predict() {
+      const canvas = document.getElementById("canvas");
+      const img = document.getElementById("image");
+      img.onload = function () {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      };
+      const model =
+        bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
+      const segmenterConfig = {
+        runtime: "mediapipe", // or 'tfjs'
+        solutionPath:
+          "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation",
+        modelType: "general",
+      };
+      const segmenter = await bodySegmentation.createSegmenter(
+        model,
+        segmenterConfig
+      );
+      const segmentation = await segmenter.segmentPeople(img);
+
+      // The mask image is an binary mask image with a 1 where there is a person and
+      // a 0 where there is not.
+      const coloredPartImage = await bodySegmentation.toBinaryMask(
+        segmentation
+      );
+      console.log(segmenter, segmentation, coloredPartImage);
+      const opacity = 0.7;
+      const flipHorizontal = false;
+      const maskBlurAmount = 0;
+      // Draw the mask image on top of the original image onto a canvas.
+      // The colored part image will be drawn semi-transparent, with an opacity of
+      // 0.7, allowing for the original image to be visible under.
+      bodySegmentation.drawMask(
+        canvas,
+        img,
+        coloredPartImage,
+        opacity,
+        maskBlurAmount,
+        flipHorizontal
+      );
+    }
+    predict();
+  </script>
+</html>
