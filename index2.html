@@ -1,26 +1,33 @@
 <html>
   <head>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-segmentation"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script> -->
   </head>
 
   <body>
     <h2>Body Segmentation</h2>
     <div>
       <img id="image" src="/img/img3_1.jpg" alt="" />
-      <canvas id="canvas" width="400"></canvas>
+      <canvas id="canvas"></canvas>
+      <canvas id="canvas2"></canvas>
     </div>
   </body>
 
   <script>
-    async function predict() {
-      const canvas = document.getElementById("canvas");
-      const img = document.getElementById("image");
+    const canvas = document.getElementById("canvas");
+    const canvas2 = document.getElementById("canvas2");
+    const ctx = canvas.getContext("2d");
+    const ctx2 = canvas2.getContext("2d");
+    const img = document.getElementById("image");
+
+    async function predictPerson() {
       img.onload = function () {
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width, (canvas2.width = img.width);
+        canvas.height, (canvas2.height = img.height);
       };
       const model =
         bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
@@ -28,21 +35,38 @@
         runtime: "mediapipe", // or 'tfjs'
         solutionPath:
           "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation",
-        modelType: "general",
+        modelType: "general", // or 'randscape'
       };
+
+      /* segmentation mask */
       const segmenter = await bodySegmentation.createSegmenter(
         model,
         segmenterConfig
       );
       const segmentation = await segmenter.segmentPeople(img);
-
-      // The mask image is an binary mask image with a 1 where there is a person and
-      // a 0 where there is not.
       const coloredPartImage = await bodySegmentation.toBinaryMask(
         segmentation
       );
-      console.log(segmenter, segmentation, coloredPartImage);
-      const opacity = 0.7;
+
+      // log test segmentation mask
+      // segmentation[0].mask.toImageData().then((data) => console.log(data));
+
+      /* bodypix colored mask */
+      // const segmenter = await bodySegmentation.createSegmenter(
+      //   bodySegmentation.SupportedModels.BodyPix
+      // );
+      // const segmentation = await segmenter.segmentPeople(img, {
+      //   multiSegmentation: false,
+      //   segmentBodyParts: true,
+      // });
+      // const coloredPartImage = await bodySegmentation.toColoredMask(
+      //   segmentation,
+      //   bodySegmentation.bodyPixMaskValueToRainbowColor,
+      //   { r: 255, g: 255, b: 255, a: 255 }
+      // );
+
+      // console.log(segmenter, segmentation, coloredPartImage);
+      const opacity = 1;
       const flipHorizontal = false;
       const maskBlurAmount = 0;
       // Draw the mask image on top of the original image onto a canvas.
@@ -56,7 +80,54 @@
         maskBlurAmount,
         flipHorizontal
       );
+
+      /* pixed mask */
+      // const pixelCellWidth = 5.0;
+      // const coloredPartImage = await bodySegmentation.toColoredMask(
+      //   segmentation,
+      //   bodySegmentation.bodyPixMaskValueToRainbowColor,
+      //   { r: 255, g: 255, b: 255, a: 255 }
+      // );
+      // await bodySegmentation.drawPixelatedMask(
+      //   canvas,
+      //   img,
+      //   coloredPartImage,
+      //   opacity,
+      //   maskBlurAmount,
+      //   flipHorizontal,
+      //   pixelCellWidth
+      // );
+      seperateBody();
     }
-    predict();
+
+    async function seperateBody() {
+      const segmenter = await bodySegmentation.createSegmenter(
+        bodySegmentation.SupportedModels.BodyPix
+      );
+      const segmentation = await segmenter.segmentPeople(canvas, {
+        multiSegmentation: false,
+        segmentBodyParts: true,
+      });
+      /* pixed mask */
+      const opacity = 1;
+      const flipHorizontal = false;
+      const maskBlurAmount = 0;
+      const pixelCellWidth = 5.0;
+      const coloredPartImage = await bodySegmentation.toColoredMask(
+        segmentation,
+        bodySegmentation.bodyPixMaskValueToRainbowColor,
+        { r: 255, g: 255, b: 255, a: 255 }
+      );
+      await bodySegmentation.drawPixelatedMask(
+        canvas2,
+        canvas,
+        coloredPartImage,
+        opacity,
+        maskBlurAmount,
+        flipHorizontal,
+        pixelCellWidth
+      );
+    }
+    predictPerson();
   </script>
 </html>
